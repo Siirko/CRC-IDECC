@@ -16,6 +16,7 @@ void *handle_client(void *arg)
             break;
         }
         buf[nbytes] = '\0'; // peut être pas nécessaire
+        CHK(printf("Client %ld: %s\n", client->id, buf));
         // Provoque une erreur sur le contenu récupéré
         /* ............... */
         // l'envoie au serveur
@@ -35,7 +36,6 @@ int start_server_connection(char *addr, char *port)
     struct addrinfo hints = {0};
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-
     TCHK(getaddrinfo(addr, port, &hints, &res));
     CHKNUL(res);
 
@@ -71,6 +71,7 @@ void start_proxy(char *addr, char *port, char *server_addr, char *server_port)
     int min = MIN_CLIENTS;
     client_t *clients = calloc(min, sizeof(client_t));
     pthread_mutex_t server_mutex = PTHREAD_MUTEX_INITIALIZER;
+
     for (int i = 0;; ++i)
     {
         if (i >= min)

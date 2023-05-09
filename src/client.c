@@ -15,7 +15,7 @@ void *handle_receiving(void *arg)
             break;
         }
         buf[nbytes] = '\0';
-        CHK(printf("%s", buf));
+        CHK(printf("Received: %s\n", buf));
     }
     return NULL;
 }
@@ -41,7 +41,5 @@ void start_client(char *addr_proxy, char *port_proxy)
         char buf[BUFLEN] = {0};
         CHK(read(STDIN_FILENO, buf, BUFLEN));
         CHK(send(sockfd, buf, strlen(buf), 0));
-        // clear from stdout the message sent
-        CHK(printf("\033[1A\033[2K"));
     }
 }
