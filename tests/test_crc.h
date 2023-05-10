@@ -18,5 +18,5 @@ void test_crc_8()
 void unit_test_crc()
 {
     //
-    test_crc_8();
+    TEST(test_crc_8);
 }
