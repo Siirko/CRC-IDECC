@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+uint8_t crc_8_lookup[0xFF];
+
 uint16_t set_nth_bit(int n, uint16_t m) { return m | (1 << n); }
 
 uint16_t get_nth_bit(int n, uint16_t m) { return (m & (1 << n)) >> n; }
@@ -16,6 +18,36 @@ void print_word(int k, uint16_t m)
     for (int i = 1; i <= k; i++)
         printf("%i", get_nth_bit(sizeof(m) * 8 - i, m));
     printf("\n");
+}
+
+void crc_8_init_table(void)
+{
+    uint8_t crc;
+    uint8_t c;
+    int i, j;
+
+    for (i = 0; i < 0xFF + 1; i++)
+    {
+        crc = i;
+        for (j = 0; j < 8; j++)
+        {
+            c = crc & TOPBIT;
+            crc <<= 1;
+            if (c)
+                crc ^= POLYNOME;
+        }
+        crc_8_lookup[i] = crc;
+    }
+}
+
+uint8_t crc_8_tablelookup(uint8_t const message[], int nBytes)
+{
+    uint8_t crc = 0;
+    int byte;
+
+    for (byte = 0; byte < nBytes; ++byte)
+        crc = crc_8_lookup[crc ^ message[byte]];
+    return crc;
 }
 
 uint8_t crc_8(uint8_t const message[], int nBytes)
