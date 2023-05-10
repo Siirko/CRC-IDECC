@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define POLYNOME 0x83
+#define POLYNOME 0x83 // x^8 +x^2 +x +1
 
 #define LEN (8 * sizeof(uint8_t))
 #define TOPBIT (1 << (LEN - 1))
