@@ -15,8 +15,19 @@ void test_crc_8()
     tps_assert(crc_8_check(to_send));
 }
 
+void test_crc_8_table()
+{
+    crc_8_init_table();
+    uint8_t const message[] = "123456789";
+    uint8_t crc = crc_8(message, 9);
+    uint8_t crc_table = crc_8_tablelookup(message, 9);
+    printf("crc_table: 0x%x\n", crc_table);
+    printf("crc: 0x%x\n", crc);
+    tps_assert(crc_table == crc);
+}
+
 void unit_test_crc()
 {
-    //
     TEST(test_crc_8);
+    TEST(test_crc_8_table);
 }
