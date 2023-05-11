@@ -39,13 +39,18 @@ void start_server(char *addr, char *port)
             goto end;
         }
         CHK(printf("Received: %c\n", packet >> 8));
-        // Fix the packet
-        uint16_t tmp = packet;
-        correct_error(&packet);
-        if (tmp == packet)
+        if (crc_8_check(packet))
+            CHK(printf("Packet is correct\n"));
+        else
         {
-            CHK(printf("Couldn't fix packet\n"));
-            packet = ERROR_CODE;
+            CHK(printf("Packet is corrupted\n"));
+            uint16_t tmp = packet;
+            correct_error(&packet);
+            if (tmp == packet)
+            {
+                CHK(printf("Couldn't fix packet\n"));
+                packet = ERROR_CODE;
+            }
         }
         // send the message back
         CHK(send(proxyfd, &packet, sizeof(uint16_t), 0));
