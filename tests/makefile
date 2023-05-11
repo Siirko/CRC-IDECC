@@ -1,6 +1,6 @@
 TARGET=tests
 CC ?= gcc
-CFLAGS = -Wall -Wextra -pedantic -g
+CFLAGS = -Wall -Wextra -g
 LDLIBS = -lm -pthread
 
 

@@ -1,10 +1,11 @@
-#include "bitman.h"
+#include "../include/bitman.h"
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-uint8_t crc_8_lookup[0x100];
+uint8_t crc_8_lookup[256];
 
 uint16_t set_nth_bit(int n, uint16_t m) { return m | (1 << n); }
 
@@ -26,7 +27,7 @@ void crc_8_init_table(void)
     uint8_t c;
     int i, j;
 
-    for (i = 0; i < 0x100; i++)
+    for (i = 0; i < 256; i++)
     {
         crc = i;
         for (j = 0; j < 8; j++)
@@ -54,7 +55,7 @@ uint8_t crc_8(uint8_t const message[], int nBytes)
 {
     uint8_t reste = 0;
 
-    // divison modulo 2 byte par byte
+    // divison dans F_2[X]
     for (int byte = 0; byte < nBytes; ++byte)
     {
         reste ^= (message[byte] << (LEN - 8));
@@ -72,10 +73,21 @@ uint8_t crc_8(uint8_t const message[], int nBytes)
 
 bool crc_8_check(uint16_t message)
 {
-    uint8_t crc = message & 0xFF;
-    uint8_t mess = message >> 8;
-    uint8_t crc_calc = crc_8(&mess, 1);
-    return crc == crc_calc;
+    uint8_t const mess[1] = {message << 8};
+    return crc_8(mess, 1) == 0;
+}
+
+int crc_8_hamming_distance(void)
+{
+    int min = __INT_MAX__;
+    for (int i = 1; i < 256; i++)
+    {
+        uint16_t res = i << 8 | crc_8_lookup[i];
+        int count = __builtin_popcount(res);
+        if (count < min)
+            min = count;
+    }
+    return min;
 }
 
 uint16_t concat(int size, uint8_t const message[size], uint8_t crc)
