@@ -39,16 +39,15 @@ void test_crc_8_hamming()
 
 void test_crc_8_check()
 {
+    srand(1);
     crc_8_init_table();
     uint8_t const message[] = "a";
     uint16_t to_send = concat(1, message, crc_8(message, 1));
     tps_assert(crc_8_check(to_send));
-    printf("not altered: ");
     print_word(16, to_send);
-    uint16_t altered = change_nth_bit(3, to_send);
-    printf("altered: ");
-    print_word(16, altered);
-    tps_assert(!crc_8_check(altered));
+    create_error(&to_send, crc_8_hamming_distance());
+    print_word(16, to_send);
+    tps_assert(!crc_8_check(to_send));
 }
 
 void unit_test_crc()

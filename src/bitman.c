@@ -21,6 +21,19 @@ void print_word(int k, uint16_t m)
     printf("\n");
 }
 
+void create_error(uint16_t *m, int quantity)
+{
+    // m = message (8bits) | crc (8bits)
+    // only alternate message bits
+    uint8_t mess = *m >> 8;
+    for (int i = 0; i < quantity; i++)
+    {
+        int bit = rand() % 8;
+        mess = change_nth_bit(bit, mess);
+    }
+    *m = concat(1, &mess, *m & 0xFF);
+}
+
 void crc_8_init_table(void)
 {
     uint8_t crc;
@@ -80,7 +93,9 @@ bool crc_8_check(uint16_t message)
 
 int crc_8_hamming_distance(void)
 {
-    int min = __INT_MAX__;
+    static int min = __INT_MAX__;
+    if (min != __INT_MAX__)
+        return min;
     for (int i = 1; i < 256; i++)
     {
         uint16_t res = i << 8 | crc_8_lookup[i];
