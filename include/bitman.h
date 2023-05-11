@@ -7,7 +7,7 @@
 #define LEN (8 * sizeof(uint8_t))
 #define TOPBIT (1 << (LEN - 1))
 
-extern uint8_t crc_8_lookup[0xFF];
+extern uint8_t crc_8_lookup[0x100];
 
 uint16_t set_nth_bit(int n, uint16_t m);
 uint16_t get_nth_bit(int n, uint16_t m);

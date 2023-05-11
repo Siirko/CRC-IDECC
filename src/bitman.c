@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-uint8_t crc_8_lookup[0xFF];
+uint8_t crc_8_lookup[0x100];
 
 uint16_t set_nth_bit(int n, uint16_t m) { return m | (1 << n); }
 
@@ -26,7 +26,7 @@ void crc_8_init_table(void)
     uint8_t c;
     int i, j;
 
-    for (i = 0; i < 0xFF + 1; i++)
+    for (i = 0; i < 0x100; i++)
     {
         crc = i;
         for (j = 0; j < 8; j++)
