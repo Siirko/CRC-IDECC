@@ -73,8 +73,9 @@ uint8_t crc_8(uint8_t const message[], int nBytes)
 
 bool crc_8_check(uint16_t message)
 {
-    uint8_t const mess[1] = {message << 8};
-    return crc_8(mess, 1) == 0;
+    uint8_t crc = message & 0xFF;
+    uint8_t const message_8[1] = {message >> 8};
+    return crc_8(message_8, 1) == crc;
 }
 
 int crc_8_hamming_distance(void)
