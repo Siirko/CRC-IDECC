@@ -1,21 +1,26 @@
 #include "../include/client.h"
+#include "../include/bitman.h"
 #include "../include/utilities.h"
+
 void *handle_receiving(void *arg)
 {
     int sockfd = *(int *)arg;
-    char buf[BUFLEN] = {0};
+    uint16_t packet = 0;
     for (;;)
     {
         int nbytes;
-        CHK(nbytes = recv(sockfd, buf, BUFLEN, 0));
+        CHK(nbytes = recv(sockfd, &packet, sizeof(uint16_t), 0));
         if (nbytes == 0)
         {
             CHK(printf("Server disconnected\n"));
-            // do something to unblock the main thread
-            break;
+            exit(EXIT_SUCCESS);
         }
-        buf[nbytes] = '\0';
-        CHK(printf("Received: %s\n", buf));
+        if (ERROR_CODE == packet)
+        {
+            CHK(printf("Server couldn't fix packet, retry\n"));
+            continue;
+        }
+        CHK(printf("Received: %c\n", packet >> 8));
     }
     return NULL;
 }
@@ -38,8 +43,10 @@ void start_client(char *addr_proxy, char *port_proxy)
     CHK(pthread_create(&handler_id, NULL, handle_receiving, (void *)&sockfd));
     for (;;)
     {
-        char buf[BUFLEN] = {0};
-        CHK(read(STDIN_FILENO, buf, BUFLEN));
-        CHK(send(sockfd, buf, strlen(buf), 0));
+        char buf[1] = {0};
+        CHK(scanf(" %c", buf));
+        uint8_t const message[1] = {buf[0]};
+        uint16_t packet = concat(1, message, crc_8(message, 1));
+        CHK(send(sockfd, &packet, sizeof(packet), 0));
     }
 }

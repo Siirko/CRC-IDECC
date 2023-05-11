@@ -3,6 +3,7 @@
 #include "tps_unit_test.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <time.h>
 
 void test_crc_8()
 {
@@ -50,10 +51,32 @@ void test_crc_8_check()
     tps_assert(!crc_8_check(to_send));
 }
 
+void test_crc_8_correct()
+{
+    srand(time(NULL));
+    crc_8_init_table();
+    uint8_t const message[] = "a";
+    uint16_t to_send = concat(1, message, crc_8(message, 1));
+    tps_assert(crc_8_check(to_send));
+    printf("packet: \t");
+    print_word(16, to_send);
+    create_error(&to_send, crc_8_hamming_distance() - 1);
+    printf("total error: %d\n", detect_error(&to_send));
+    printf("packet_error: \t");
+    print_word(16, to_send);
+    tps_assert(!crc_8_check(to_send));
+    correct_error(&to_send);
+    printf("packet_nerror: \t");
+    print_word(16, to_send);
+    tps_assert(to_send >> 8 == 'a');
+    printf("message: %c\n", to_send >> 8);
+}
+
 void unit_test_crc()
 {
     TEST(test_crc_8_hamming);
     TEST(test_crc_8);
     TEST(test_crc_8_table);
     TEST(test_crc_8_check);
+    TEST(test_crc_8_correct);
 }

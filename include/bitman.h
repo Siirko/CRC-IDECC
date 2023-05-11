@@ -6,13 +6,16 @@
 #define LEN (8 * sizeof(uint8_t))
 #define TOPBIT (1 << (LEN - 1))
 
+#define ERROR_CODE 0x44
 extern uint8_t crc_8_lookup[256];
 
 uint16_t set_nth_bit(int n, uint16_t m);
 uint16_t get_nth_bit(int n, uint16_t m);
 uint16_t change_nth_bit(int n, uint16_t m);
 void print_word(int k, uint16_t m);
-void create_error(uint16_t *m, int quantity);
+void create_error(uint16_t *packet, int quantity);
+int detect_error(uint16_t *packet);
+void correct_error(uint16_t *packet);
 
 void crc_8_init_table(void);
 uint8_t crc_8_tablelookup(uint8_t const message[], int nBytes);

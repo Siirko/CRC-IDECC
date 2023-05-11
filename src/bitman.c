@@ -21,17 +21,59 @@ void print_word(int k, uint16_t m)
     printf("\n");
 }
 
-void create_error(uint16_t *m, int quantity)
+void create_error(uint16_t *packet, int quantity)
 {
     // m = message (8bits) | crc (8bits)
     // only alternate message bits
-    uint8_t mess = *m >> 8;
+    uint8_t mess = *packet >> 8;
     for (int i = 0; i < quantity; i++)
     {
         int bit = rand() % 8;
         mess = change_nth_bit(bit, mess);
     }
-    *m = concat(1, &mess, *m & 0xFF);
+    *packet = concat(1, &mess, *packet & 0xFF);
+}
+
+int detect_error(uint16_t *packet)
+{
+    // m = message (8bits) | crc (8bits)
+    uint8_t mess = *packet >> 8;
+    uint8_t crc = *packet & 0xFF;
+    uint8_t const message[1] = {mess};
+    uint8_t crc_calc = crc_8(message, 1);
+    if (crc_calc == crc)
+        return 0;
+    uint8_t xor = crc_calc ^ crc;
+    for (int i = 0; i < 256; i++)
+    {
+        if (crc_8_lookup[i] == xor)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void correct_error(uint16_t *packet)
+{
+    // m = message (8bits) | crc (8bits)
+    uint8_t mess = *packet >> 8;
+    uint8_t crc = *packet & 0xFF;
+    uint8_t const message[1] = {mess};
+    uint8_t crc_calc = crc_8(message, 1);
+    if (crc_calc != crc)
+    {
+        uint8_t xor = crc_calc ^ crc;
+        for (int i = 0; i < 256; i++)
+        {
+            if (crc_8_lookup[i] == xor)
+            {
+                mess ^= i;
+                break;
+            }
+        }
+        *packet = concat(1, &mess, crc);
+    }
 }
 
 void crc_8_init_table(void)
@@ -84,11 +126,11 @@ uint8_t crc_8(uint8_t const message[], int nBytes)
     return reste;
 }
 
-bool crc_8_check(uint16_t message)
+bool crc_8_check(uint16_t packet)
 {
-    uint8_t crc = message & 0xFF;
-    uint8_t const message_8[1] = {message >> 8};
-    return crc_8(message_8, 1) == crc;
+    uint8_t crc = packet & 0xFF;
+    uint8_t const message[1] = {packet >> 8};
+    return crc_8(message, 1) == crc;
 }
 
 int crc_8_hamming_distance(void)

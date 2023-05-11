@@ -1,4 +1,5 @@
 #include "../include/args_parsing.h"
+#include "../include/bitman.h"
 #include "../include/client.h"
 #include "../include/proxy.h"
 #include "../include/server.h"
@@ -43,6 +44,7 @@ arguments_t init_args(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     arguments_t arguments = init_args(argc, argv);
+    crc_8_init_table();
     switch (arguments.mode)
     {
     case SERVER:

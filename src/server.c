@@ -1,6 +1,6 @@
 #include "../include/server.h"
+#include "../include/bitman.h"
 #include "../include/utilities.h"
-
 void start_server(char *addr, char *port)
 {
     struct sockaddr_storage proxy_addr = {0};
@@ -30,19 +30,25 @@ void start_server(char *addr, char *port)
     for (;;)
     {
         // receive a message
-        char buf[BUFSIZ] = {0};
+        uint16_t packet = 0;
         int nbytes = 0;
-        CHK(nbytes = recv(proxyfd, buf, BUFSIZ, 0));
+        CHK(nbytes = recv(proxyfd, &packet, sizeof(uint16_t), 0));
         if (nbytes == 0)
         {
             CHK(fprintf(stderr, "Proxy disconnected\n"));
             goto end;
         }
-        CHK(printf("Received: %s\n", buf));
+        CHK(printf("Received: %c\n", packet >> 8));
         // Fix the packet
-        /* ................ */
+        uint16_t tmp = packet;
+        correct_error(&packet);
+        if (tmp == packet)
+        {
+            CHK(printf("Couldn't fix packet\n"));
+            packet = ERROR_CODE;
+        }
         // send the message back
-        CHK(send(proxyfd, buf, nbytes, 0));
+        CHK(send(proxyfd, &packet, sizeof(uint16_t), 0));
     }
 
 end:
