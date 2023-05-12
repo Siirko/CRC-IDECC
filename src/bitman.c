@@ -83,16 +83,16 @@ packet_t crc_8_encode(uint8_t const message[], int nBytes)
 
 void create_packet_error(packet_t *packet, int quantity)
 {
-    int old_bit = -1;
+    int indexes[packet->size]; // to avoid creating multiple errors in the same
+                               // byte
+    // create one error (one bit alternate) per byte
     for (int i = 0; i < quantity; i++)
     {
-        int bit = rand() % (packet->size * 8);
-        // avoid to change the same bit twice
-        while (bit == old_bit)
-            bit = rand() % (packet->size * 8);
-        old_bit = bit;
-        int byte = bit / 8;
-        bit %= 8;
+        int bit = rand() % 8;
+        int byte = rand() % packet->size;
+        while (indexes[byte] == 1)
+            byte = rand() % packet->size;
+        indexes[byte] = 1;
         packet->data[byte] = change_nth_bit(bit, packet->data[byte]);
     }
 }
