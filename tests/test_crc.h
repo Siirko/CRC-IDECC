@@ -92,47 +92,31 @@ void test_crc_8_encoding()
 void test_crc_8_packet_error()
 {
     srand(time(NULL));
-    uint8_t const message[] = "12345678";
-    packet_t packet = crc_8_encode(message, 8);
-    tps_assert(packet.crc == 0xEA);
+    int len = 4;
+    uint8_t const message[] = "1234";
+    packet_t packet = crc_8_encode(message, len);
+    tps_assert(crc_8_check_packet(packet));
+    tps_assert(packet.crc == 0x1A);
     tps_assert(packet.data[0] == '1');
     tps_assert(packet.data[1] == '2');
     tps_assert(packet.data[2] == '3');
     tps_assert(packet.data[3] == '4');
-    tps_assert(packet.data[4] == '5');
-    tps_assert(packet.data[5] == '6');
-    tps_assert(packet.data[6] == '7');
-    tps_assert(packet.data[7] == '8');
-    tps_assert(packet.size == 8);
+    tps_assert(packet.size == len);
     packet_t packet_error = packet;
-    create_packet_error(&packet_error, 4);
-    for (int i = 0; i < 8; i++)
+    create_packet_error(&packet_error, 1);
+    for (int i = 0; i < len; i++)
     {
         printf("%d.\n", i);
         print_word(16, packet.data[i]);
         print_word(16, packet_error.data[i]);
         printf("-----------------\n");
     }
-    /*
     tps_assert(!crc_8_check_packet(packet_error));
-    printf("number of error that can be corrected: %d\n",
-           CEIL(crc_8_hamming_distance(), 2) - 1);
-    packet_t tmp = packet_error;
-    correct_packet_error(&packet_error);
-    printf("corrected packet\n");
-    for (int i = 0; i < 8; i++)
-    {
-        printf("%d.\n", i);
-        print_word(16, packet.data[i]);
-        printf("\n");
-        print_word(16, tmp.data[i]);
-        print_word(16, packet_error.data[i]);
-        printf("-----------------\n");
-    }
+    packet_t corrected = packet_error;
+    correct_packet_error(&corrected);
     printf("packet: %s\n", packet.data);
-    printf("packet_error: %s\n", tmp.data);
-    printf("packet_corrected: %s\n", packet_error.data);
-    */
+    printf("packet_error: %s\n", packet_error.data);
+    printf("packet_corrected: %s\n", corrected.data);
 }
 void unit_test_crc()
 {

@@ -97,9 +97,16 @@ void create_packet_error(packet_t *packet, int quantity)
     }
 }
 
+int count_errors(packet_t *packet)
+{
+    // d - 1 is the number of errors that can be detected
+    int nb_fix_error = CEIL(crc_8_hamming_distance(), 2) - 1;
+    // TODO: count errors
+}
+
 void correct_packet_error(packet_t *packet)
 {
-    int nb_fix_error = CEIL(crc_8_hamming_distance(), 2) - 1;
+    int errors = count_errors(packet);
     // TODO: fix error if possible
 }
 
