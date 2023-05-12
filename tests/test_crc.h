@@ -58,6 +58,8 @@ void test_crc_8_correct()
     uint8_t const message[] = "a";
     uint16_t to_send = concat(1, message, crc_8_slow(message, 1));
     tps_assert(crc_8_check(to_send));
+    uint8_t r[2] = {to_send >> 8, to_send}; // r[0] = 'a', r[1] = crc
+    tps_assert(crc_8_fast(r, 2) == 0);
     printf("mess: \t\t");
     print_word(8, to_send);
     create_error(&to_send, crc_8_hamming_distance() - 1);
@@ -103,12 +105,14 @@ void test_crc_8_packet_error()
     tps_assert(packet.data[3] == '4');
     tps_assert(packet.size == len);
     packet_t packet_error = packet;
+    int errors = crc_8_hamming_distance() - 1;
     create_packet_error(&packet_error, 1);
+    // packet.data[0] = change_nth_bit(7, packet.data[0]);
     for (int i = 0; i < len; i++)
     {
         printf("%d.\n", i);
-        print_word(16, packet.data[i]);
-        print_word(16, packet_error.data[i]);
+        print_word(8, packet.data[i] << 8);
+        print_word(8, packet_error.data[i] << 8);
         printf("-----------------\n");
     }
     tps_assert(!crc_8_check_packet(packet_error));

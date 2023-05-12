@@ -83,6 +83,7 @@ packet_t crc_8_encode(uint8_t const message[], int nBytes)
 
 void create_packet_error(packet_t *packet, int quantity)
 {
+    /*
     int indexes[packet->size]; // to avoid creating multiple errors in the same
                                // byte
     // create one error (one bit alternate) per byte
@@ -95,19 +96,28 @@ void create_packet_error(packet_t *packet, int quantity)
         indexes[byte] = 1;
         packet->data[byte] = change_nth_bit(bit, packet->data[byte]);
     }
-}
-
-int count_errors(packet_t *packet)
-{
-    // d - 1 is the number of errors that can be detected
-    int nb_fix_error = CEIL(crc_8_hamming_distance(), 2) - 1;
-    // TODO: count errors
+    */
+    packet->data[packet->size - 1] =
+        change_nth_bit(0, packet->data[packet->size - 1]);
 }
 
 void correct_packet_error(packet_t *packet)
 {
-    int errors = count_errors(packet);
-    // TODO: fix error if possible
+    uint8_t crc_error = crc_8_fast(packet->data, packet->size);
+    if (crc_error != packet->crc)
+    {
+        uint8_t crc_xored = crc_error ^ packet->crc;
+        for (int i = 0; i < 256; i++)
+        {
+            int index = 3;
+            if (crc_8_register[i] == crc_xored)
+            {
+                printf("i = %i\n", i);
+                packet->data[index] ^= i;
+                break;
+            }
+        }
+    }
 }
 
 void create_error(uint16_t *packet, int quantity)
@@ -147,9 +157,8 @@ void correct_error(uint16_t *packet)
 
 bool crc_8_check(uint16_t packet)
 {
-    uint8_t crc = packet & 0xFF;
-    uint8_t const message[1] = {packet >> 8};
-    return crc_8_fast(message, 1) == crc;
+    uint8_t const message[2] = {packet >> 8, packet & 0xFF};
+    return crc_8_fast(message, 2) == 0;
 }
 
 bool crc_8_check_packet(packet_t packet)

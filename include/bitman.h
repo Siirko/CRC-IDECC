@@ -24,7 +24,6 @@ void print_word(int k, uint16_t m);
 
 void create_error(uint16_t *packet, int quantity);
 void correct_error(uint16_t *packet);
-int count_errors(packet_t *packet);
 void create_packet_error(packet_t *packet, int quantity);
 void correct_packet_error(packet_t *packet);
 
