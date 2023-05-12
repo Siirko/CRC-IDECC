@@ -46,7 +46,7 @@ void start_client(char *addr_proxy, char *port_proxy)
         char buf[1] = {0};
         CHK(scanf(" %c", buf));
         uint8_t const message[1] = {buf[0]};
-        uint16_t packet = concat(1, message, crc_8(message, 1));
+        uint16_t packet = concat(1, message, crc_8_slow(message, 1));
         CHK(send(sockfd, &packet, sizeof(packet), 0));
     }
 }

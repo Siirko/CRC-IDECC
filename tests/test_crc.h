@@ -8,7 +8,7 @@
 void test_crc_8()
 {
     uint8_t const message[] = "a";
-    uint8_t crc = crc_8(message, 1);
+    uint8_t crc = crc_8_slow(message, 1);
     printf("message: %s\n", message);
     printf("crc: 0x%x\n", crc);
     tps_assert(crc == 0x43);
@@ -22,8 +22,8 @@ void test_crc_8_table()
 {
     crc_8_init_table();
     uint8_t const message[] = "123456789";
-    uint8_t crc = crc_8(message, 9);
-    uint8_t crc_table = crc_8_tablelookup(message, 9);
+    uint8_t crc = crc_8_slow(message, 9);
+    uint8_t crc_table = crc_8_fast(message, 9);
     printf("message: %s\n", message);
     printf("crc_table: 0x%x\n", crc_table);
     printf("crc: 0x%x\n", crc);
@@ -43,7 +43,7 @@ void test_crc_8_check()
     srand(1);
     crc_8_init_table();
     uint8_t const message[] = "a";
-    uint16_t to_send = concat(1, message, crc_8(message, 1));
+    uint16_t to_send = concat(1, message, crc_8_slow(message, 1));
     tps_assert(crc_8_check(to_send));
     print_word(16, to_send);
     create_error(&to_send, crc_8_hamming_distance());
@@ -56,12 +56,11 @@ void test_crc_8_correct()
     srand(time(NULL));
     crc_8_init_table();
     uint8_t const message[] = "a";
-    uint16_t to_send = concat(1, message, crc_8(message, 1));
+    uint16_t to_send = concat(1, message, crc_8_slow(message, 1));
     tps_assert(crc_8_check(to_send));
     printf("packet: \t");
     print_word(16, to_send);
     create_error(&to_send, crc_8_hamming_distance() - 1);
-    printf("total error: %d\n", detect_error(&to_send));
     printf("packet_error: \t");
     print_word(16, to_send);
     tps_assert(!crc_8_check(to_send));
@@ -72,6 +71,64 @@ void test_crc_8_correct()
     printf("message: %c\n", to_send >> 8);
 }
 
+void test_crc_8_encoding()
+{
+    uint8_t const message[] = "1234567";
+    packet_t packet = crc_8_encode(message, 7);
+    printf("message: %s\n", packet.data);
+    printf("crc: 0x%x\n", packet.crc);
+    tps_assert(packet.crc == 0x9F);
+    tps_assert(crc_8_check_packet(packet));
+    tps_assert(packet.data[0] == '1');
+    tps_assert(packet.data[1] == '2');
+    tps_assert(packet.data[2] == '3');
+    tps_assert(packet.data[3] == '4');
+    tps_assert(packet.data[4] == '5');
+    tps_assert(packet.data[5] == '6');
+    tps_assert(packet.data[6] == '7');
+    tps_assert(packet.size == 7);
+}
+
+void test_crc_8_packet_error()
+{
+    srand(time(NULL));
+    uint8_t const message[] = "12345678";
+    packet_t packet = crc_8_encode(message, 8);
+    tps_assert(packet.crc == 0xEA);
+    tps_assert(packet.data[0] == '1');
+    tps_assert(packet.data[1] == '2');
+    tps_assert(packet.data[2] == '3');
+    tps_assert(packet.data[3] == '4');
+    tps_assert(packet.data[4] == '5');
+    tps_assert(packet.data[5] == '6');
+    tps_assert(packet.data[6] == '7');
+    tps_assert(packet.data[7] == '8');
+    tps_assert(packet.size == 8);
+    packet_t packet_error = packet;
+    create_packet_error(&packet_error, 1);
+    for (int i = 0; i < 8; i++)
+    {
+        printf("%d.\n", i);
+        print_word(16, packet.data[i]);
+        print_word(16, packet_error.data[i]);
+        printf("-----------------\n");
+    }
+    tps_assert(!crc_8_check_packet(packet_error));
+    printf("number of error that can be corrected: %d\n",
+           CEIL(crc_8_hamming_distance(), 2) - 1);
+    packet_t tmp = packet_error;
+    correct_packet_error(&packet_error);
+    printf("corrected packet\n");
+    for (int i = 0; i < 8; i++)
+    {
+        printf("%d.\n", i);
+        print_word(16, packet.data[i]);
+        printf("\n");
+        print_word(16, tmp.data[i]);
+        print_word(16, packet_error.data[i]);
+        printf("-----------------\n");
+    }
+}
 void unit_test_crc()
 {
     TEST(test_crc_8_hamming);
@@ -79,4 +136,6 @@ void unit_test_crc()
     TEST(test_crc_8_table);
     TEST(test_crc_8_check);
     TEST(test_crc_8_correct);
+    TEST(test_crc_8_encoding);
+    TEST(test_crc_8_packet_error);
 }
