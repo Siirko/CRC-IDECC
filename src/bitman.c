@@ -103,16 +103,17 @@ void denoisify_packet(packet_t *packet)
     if (crc_error != packet->crc)
     {
         // uint8_t crc_xored = crc_error ^ packet->crc;
+        uint8_t alternated_data[packet->size];
         for (int i = 0; i < packet->size; i++)
         {
             uint8_t byte = packet->data[i];
             for (int j = 0; j < 8; j++)
             {
                 byte = change_nth_bit(j, byte);
-                uint8_t mess_crc[packet->size];
-                memcpy(mess_crc, packet->data, packet->size);
-                mess_crc[i] = byte;
-                if (crc8_verify_bytes(mess_crc, packet->size, packet->crc) == 0)
+                memcpy(alternated_data, packet->data, packet->size);
+                alternated_data[i] = byte;
+                if (crc8_verify_bytes(alternated_data, packet->size,
+                                      packet->crc) == 0)
                 {
                     packet->data[i] = byte;
                     return;
