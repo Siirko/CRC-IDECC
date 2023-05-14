@@ -59,6 +59,7 @@ void start_client(char *addr_proxy, char *port_proxy)
     int sockfd;
     CHK(sockfd = socket(res->ai_family, hints.ai_socktype, 0));
     CHK(connect(sockfd, res->ai_addr, res->ai_addrlen));
+    freeaddrinfo(res);
 
     uint16_t packet = 0;
     pthread_t handler_id;

@@ -80,14 +80,12 @@ int start_server_connection(char *addr, char *port)
     int sockfd;
     CHK(sockfd = socket(res->ai_family, hints.ai_socktype, 0));
     CHK(connect(sockfd, res->ai_addr, res->ai_addrlen));
+    freeaddrinfo(res);
     return sockfd;
 }
 
-void start_proxy(char *addr, char *port, char *server_addr, char *server_port)
+int init_proxy(char *addr, char *port)
 {
-    int serverfd = start_server_connection(server_addr, server_port);
-    struct sockaddr_storage client_addr;
-    socklen_t client_addr_len = sizeof(client_addr);
     struct addrinfo *res = NULL;
     struct addrinfo hints = {0};
     hints.ai_family = AF_UNSPEC;
@@ -105,6 +103,14 @@ void start_proxy(char *addr, char *port, char *server_addr, char *server_port)
     CHK(bind(sockfd, res->ai_addr, res->ai_addrlen));
 
     CHK(listen(sockfd, 10));
+    freeaddrinfo(res);
+    return sockfd;
+}
+
+void start_proxy(char *addr, char *port, char *server_addr, char *server_port)
+{
+    int serverfd = start_server_connection(server_addr, server_port);
+    int sockfd = init_proxy(addr, port);
     // TODO:handle CTRL-C to exit cleanly
     set_signal(SIGINT, interrupt);
     int min = MIN_CLIENTS;
@@ -112,6 +118,8 @@ void start_proxy(char *addr, char *port, char *server_addr, char *server_port)
     CHK(printf("Waiting for connection...\n"));
     for (int i = 0; _sigint == 0; ++i)
     {
+        struct sockaddr_storage client_addr = {0};
+        socklen_t client_addr_len = sizeof(client_addr);
         if (i >= min)
         {
             min *= 2;
@@ -139,8 +147,6 @@ void start_proxy(char *addr, char *port, char *server_addr, char *server_port)
         TCHK(pthread_create(&clients[i].id, NULL, handle_client, &clients[i]));
         TCHK(pthread_detach(clients[i].id));
     }
-
-    freeaddrinfo(res);
     free(clients);
     CHK(close(serverfd));
     CHK(close(sockfd));

@@ -1,11 +1,9 @@
 #include "../include/server.h"
 #include "../include/bitman.h"
 #include "../include/utilities.h"
-void start_server(char *addr, char *port)
+
+int init_server(char *addr, char *port)
 {
-    srand(time(NULL));
-    struct sockaddr_storage proxy_addr = {0};
-    socklen_t proxy_addr_len = sizeof(proxy_addr);
     struct addrinfo *res = NULL;
     struct addrinfo hints = {0};
     hints.ai_family = AF_UNSPEC;
@@ -22,7 +20,17 @@ void start_server(char *addr, char *port)
     CHK(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
     CHK(bind(sockfd, res->ai_addr, res->ai_addrlen));
     CHK(listen(sockfd, 1));
+    freeaddrinfo(res);
+    return sockfd;
+}
+
+void start_server(char *addr, char *port)
+{
+    srand(time(NULL));
+    int sockfd = init_server(addr, port);
     // wait a connection
+    struct sockaddr_storage proxy_addr = {0};
+    socklen_t proxy_addr_len = sizeof(proxy_addr);
     int proxyfd;
     CHK(printf("Waiting proxy connection...\n"));
     CHK(proxyfd =
@@ -63,5 +71,4 @@ void start_server(char *addr, char *port)
 end:
     CHK(close(proxyfd));
     CHK(close(sockfd));
-    freeaddrinfo(res);
 }
