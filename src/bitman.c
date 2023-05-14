@@ -100,7 +100,6 @@ void noisify_packet(packet_t *packet, int quantity)
 void denoisify_packet(packet_t *packet)
 {
     uint8_t crc_error = crc8_fast(packet->data, packet->size);
-    uint8_t chk_crc = 0;
     if (crc_error != packet->crc)
     {
         // uint8_t crc_xored = crc_error ^ packet->crc;
@@ -110,23 +109,16 @@ void denoisify_packet(packet_t *packet)
             for (int j = 0; j < 8; j++)
             {
                 byte = change_nth_bit(j, byte);
-                // print_word(8, byte << 8);
-                chk_crc = 0;
-                for (int b = 0; b < packet->size; ++b)
-                {
-                    if (b == i)
-                        chk_crc = crc8_register[chk_crc ^ byte];
-                    else
-                        chk_crc = crc8_register[chk_crc ^ packet->data[b]];
-                }
-                if (chk_crc == packet->crc)
+                uint8_t mess_crc[packet->size];
+                memcpy(mess_crc, packet->data, packet->size);
+                mess_crc[i] = byte;
+                if (crc8_verify_bytes(mess_crc, packet->size, packet->crc) == 0)
                 {
                     packet->data[i] = byte;
                     return;
                 }
                 byte = change_nth_bit(j, byte);
             }
-            // printf("\n");
         }
     }
 }
@@ -153,7 +145,7 @@ void denoisify(uint16_t *packet)
     // packet = message (8bits) | crc (8bits)
     uint8_t mess = *packet >> 8;
     uint8_t crc = *packet;
-    if (crc8_verify(*packet) == false)
+    if (crc8_verify(*packet) != 0)
     {
         uint8_t crc_calc = crc8_fast(&mess, 1);
         uint8_t xor = crc_calc ^ crc;
@@ -173,18 +165,26 @@ void denoisify(uint16_t *packet)
     }
 }
 
-bool crc8_verify(uint16_t packet)
+int crc8_verify(uint16_t packet)
 {
     uint8_t const message[2] = {packet >> 8, packet & 0xFF};
-    return crc8_fast(message, 2) == 0;
+    return crc8_fast(message, 2);
 }
 
-bool crc8_verify_packet(packet_t packet)
+int crc8_verify_bytes(uint8_t const message[], int nBytes, uint8_t crc)
+{
+    uint8_t message_crc[nBytes + 1];
+    memcpy(message_crc, message, nBytes);
+    message_crc[nBytes] = crc;
+    return crc8_fast(message_crc, nBytes + 1);
+}
+
+int crc8_verify_packet(packet_t packet)
 {
     uint8_t message[packet.size + 1];
     memcpy(message, packet.data, packet.size);
     message[packet.size] = packet.crc;
-    return crc8_fast(message, packet.size + 1) == 0;
+    return crc8_fast(message, packet.size + 1);
 }
 
 int crc8_hamming_distance(void)

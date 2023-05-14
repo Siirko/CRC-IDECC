@@ -33,5 +33,6 @@ uint8_t crc8_fast(uint8_t const message[], int nBytes);
 uint8_t crc8_slow(uint8_t const message[], int nBytes);
 uint16_t crc8_encode(uint8_t message, uint8_t crc);
 packet_t crc8_encode_packet(uint8_t const message[], int nBytes);
-bool crc8_verify(uint16_t message);
-bool crc8_verify_packet(packet_t packet);
+int crc8_verify(uint16_t message);
+int crc8_verify_bytes(uint8_t const message[], int nBytes, uint8_t crc);
+int crc8_verify_packet(packet_t packet);
