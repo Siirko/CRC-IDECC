@@ -44,7 +44,7 @@ arguments_t init_args(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     arguments_t arguments = init_args(argc, argv);
-    crc_8_init_table();
+    crc8_init_register();
     switch (arguments.mode)
     {
     case SERVER:

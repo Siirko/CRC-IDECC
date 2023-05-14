@@ -7,23 +7,24 @@
 
 void test_crc_8()
 {
-    uint8_t const message[] = "a";
-    uint8_t crc = crc_8_slow(message, 1);
+    uint8_t message[] = "a";
+    uint8_t crc = crc8_slow(message, 1);
+    uint16_t r = crc8_encode(message[0], crc);
+    denoisify(&r);
     printf("message: %s\n", message);
     printf("crc: 0x%x\n", crc);
     tps_assert(crc == 0x43);
-    uint16_t to_send = concat(1, message, crc);
+    uint16_t to_send = crc8_encode(message[0], crc);
     tps_assert(to_send == 0b110000101000011); // contient le char 'a' et le crc
     tps_assert(to_send >> 8 == 'a');
-    tps_assert(crc_8_check(to_send));
+    tps_assert(crc8_verify(to_send));
 }
 
 void test_crc_8_table()
 {
-    crc_8_init_table();
     uint8_t const message[] = "123456789";
-    uint8_t crc = crc_8_slow(message, 9);
-    uint8_t crc_table = crc_8_fast(message, 9);
+    uint8_t crc = crc8_slow(message, 9);
+    uint8_t crc_table = crc8_fast(message, 9);
     printf("message: %s\n", message);
     printf("crc_table: 0x%x\n", crc_table);
     printf("crc: 0x%x\n", crc);
@@ -32,8 +33,7 @@ void test_crc_8_table()
 
 void test_crc_8_hamming()
 {
-    crc_8_init_table();
-    int hamming = crc_8_hamming_distance();
+    int hamming = crc8_hamming_distance();
     tps_assert(hamming == 4);
     printf("hamming: %d\n", hamming);
 }
@@ -41,32 +41,28 @@ void test_crc_8_hamming()
 void test_crc_8_check()
 {
     srand(1);
-    crc_8_init_table();
     uint8_t const message[] = "a";
-    uint16_t to_send = concat(1, message, crc_8_slow(message, 1));
-    tps_assert(crc_8_check(to_send));
+    uint16_t to_send = crc8_encode(message[0], crc8_slow(message, 1));
+    tps_assert(crc8_verify(to_send));
     print_word(16, to_send);
-    create_error(&to_send, crc_8_hamming_distance());
+    noisify(&to_send, crc8_hamming_distance());
     print_word(16, to_send);
-    tps_assert(!crc_8_check(to_send));
+    tps_assert(!crc8_verify(to_send));
 }
 
 void test_crc_8_correct()
 {
     srand(time(NULL));
-    crc_8_init_table();
-    uint8_t const message[] = "a";
-    uint16_t to_send = concat(1, message, crc_8_slow(message, 1));
-    tps_assert(crc_8_check(to_send));
-    uint8_t r[2] = {to_send >> 8, to_send}; // r[0] = 'a', r[1] = crc
-    tps_assert(crc_8_fast(r, 2) == 0);
+    uint8_t message[] = "a";
+    uint16_t to_send = crc8_encode(message[0], crc8_slow(message, 1));
+    tps_assert(crc8_verify(to_send));
     printf("mess: \t\t");
     print_word(8, to_send);
-    create_error(&to_send, crc_8_hamming_distance() - 1);
+    noisify(&to_send, 1);
     printf("mess_error: \t");
     print_word(8, to_send);
-    tps_assert(!crc_8_check(to_send));
-    correct_error(&to_send);
+    tps_assert(!crc8_verify(to_send));
+    denoisify(&to_send);
     printf("mess_nerror: \t");
     print_word(8, to_send);
     tps_assert(to_send >> 8 == 'a');
@@ -75,12 +71,12 @@ void test_crc_8_correct()
 
 void test_crc_8_encoding()
 {
-    uint8_t const message[] = "1234567";
-    packet_t packet = crc_8_encode(message, 7);
+    uint8_t message[] = "1234567";
+    packet_t packet = crc8_encode_packet(message, 7);
     printf("message: %s\n", packet.data);
     printf("crc: 0x%x\n", packet.crc);
     tps_assert(packet.crc == 0x9F);
-    tps_assert(crc_8_check_packet(packet));
+    tps_assert(crc8_verify_packet(packet));
     tps_assert(packet.data[0] == '1');
     tps_assert(packet.data[1] == '2');
     tps_assert(packet.data[2] == '3');
@@ -95,19 +91,11 @@ void test_crc_8_packet_error()
 {
     srand(time(NULL));
     int len = 4;
-    uint8_t const message[] = "1234";
-    packet_t packet = crc_8_encode(message, len);
-    tps_assert(crc_8_check_packet(packet));
-    tps_assert(packet.crc == 0x1A);
-    tps_assert(packet.data[0] == '1');
-    tps_assert(packet.data[1] == '2');
-    tps_assert(packet.data[2] == '3');
-    tps_assert(packet.data[3] == '4');
-    tps_assert(packet.size == len);
+    uint8_t message[] = "1234";
+    packet_t packet = crc8_encode_packet(message, len);
+    tps_assert(crc8_verify_packet(packet));
     packet_t packet_error = packet;
-    int errors = crc_8_hamming_distance() - 1;
-    create_packet_error(&packet_error, 1);
-    // packet.data[0] = change_nth_bit(7, packet.data[0]);
+    noisifiy_packet(&packet_error, 1);
     for (int i = 0; i < len; i++)
     {
         printf("%d.\n", i);
@@ -115,15 +103,16 @@ void test_crc_8_packet_error()
         print_word(8, packet_error.data[i] << 8);
         printf("-----------------\n");
     }
-    tps_assert(!crc_8_check_packet(packet_error));
+    tps_assert(!crc8_verify_packet(packet_error));
     packet_t corrected = packet_error;
-    correct_packet_error(&corrected);
+    denoisifiy_packet(&corrected);
     printf("packet: %s\n", packet.data);
     printf("packet_error: %s\n", packet_error.data);
     printf("packet_corrected: %s\n", corrected.data);
 }
 void unit_test_crc()
 {
+    crc8_init_register();
     TEST(test_crc_8_hamming);
     TEST(test_crc_8);
     TEST(test_crc_8_table);

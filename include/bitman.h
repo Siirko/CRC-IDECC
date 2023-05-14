@@ -8,7 +8,7 @@
 #define CEIL(x, y) (((x) + (y)-1)) / (y)
 
 #define ERROR_CODE 0x44
-extern uint8_t crc_8_register[256];
+extern uint8_t crc8_register[256];
 
 typedef struct
 {
@@ -22,17 +22,16 @@ uint16_t get_nth_bit(int n, uint16_t m);
 uint16_t change_nth_bit(int n, uint16_t m);
 void print_word(int k, uint16_t m);
 
-void create_error(uint16_t *packet, int quantity);
-void correct_error(uint16_t *packet);
-void create_packet_error(packet_t *packet, int quantity);
-void correct_packet_error(packet_t *packet);
+void noisify(uint16_t *packet, int quantity);
+void noisifiy_packet(packet_t *packet, int quantity);
+void denoisify(uint16_t *packet);
+void denoisifiy_packet(packet_t *packet);
 
-void crc_8_init_table(void);
-uint8_t crc_8_fast(uint8_t const message[], int nBytes);
-uint8_t crc_8_slow(uint8_t const message[], int nBytes);
-packet_t crc_8_encode(uint8_t const message[], int nBytes);
-bool crc_8_check(uint16_t message);
-bool crc_8_check_packet(packet_t packet);
-
-int crc_8_hamming_distance(void);
-uint16_t concat(int size, uint8_t const message[size], uint8_t crc);
+int crc8_hamming_distance(void);
+void crc8_init_register(void);
+uint8_t crc8_fast(uint8_t const message[], int nBytes);
+uint8_t crc8_slow(uint8_t const message[], int nBytes);
+uint16_t crc8_encode(uint8_t message, uint8_t crc);
+packet_t crc8_encode_packet(uint8_t const message[], int nBytes);
+bool crc8_verify(uint16_t message);
+bool crc8_verify_packet(packet_t packet);

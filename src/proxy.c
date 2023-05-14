@@ -19,13 +19,18 @@ void *handle_client(void *arg)
         CHK(printf("Client %ld: %c\n", client->id, packet >> 8));
         // Provoque une erreur sur le contenu récupéré
         TCHK(pthread_mutex_lock(client->server_mutex));
-        create_error(&packet, crc_8_hamming_distance() - 1);
+        noisify(&packet, crc8_hamming_distance() - 1);
         TCHK(pthread_mutex_unlock(client->server_mutex));
         CHK(printf("Client %ld corrupted: %c\n", client->id, packet >> 8));
         // l'envoie au serveur
         TCHK(pthread_mutex_lock(client->server_mutex));
         CHK(send(*client->serverfd, &packet, sizeof(uint16_t), 0));
         CHK(nbytes = recv(*client->serverfd, &packet, sizeof(uint16_t), 0));
+        if (nbytes == 0)
+        {
+            CHK(fprintf(stderr, "Server disconnected\n"));
+            exit(EXIT_SUCCESS);
+        }
         CHK(printf("Client %ld fixed: %c\n", client->id, packet >> 8));
         TCHK(pthread_mutex_unlock(client->server_mutex));
         // l'envoie au client
