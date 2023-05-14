@@ -3,6 +3,32 @@
 #include "../include/client.h"
 #include "../include/utilities.h"
 
+volatile sig_atomic_t _sigint = 0;
+
+void interrupt(int sig)
+{
+    switch (sig)
+    {
+    // Ctrl + C
+    case SIGINT:
+        _sigint = 1;
+        break;
+    default:
+        break;
+    }
+}
+
+void set_signal(int sig, void (*handler)(int))
+{
+    struct sigaction action;
+    // Our handler
+    action.sa_handler = handler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+    // Register Ctrl + C handler
+    sigaction(sig, &action, NULL);
+}
+
 void *handle_client(void *arg)
 {
     client_t *client = (client_t *)arg;
@@ -77,11 +103,12 @@ void start_proxy(char *addr, char *port, char *server_addr, char *server_port)
 
     CHK(listen(sockfd, 10));
     // TODO:handle CTRL-C to exit cleanly
+    set_signal(SIGINT, interrupt);
     int min = MIN_CLIENTS;
     client_t *clients = calloc(min, sizeof(client_t));
     pthread_mutex_t server_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-    for (int i = 0;; ++i)
+    for (int i = 0; _sigint == 0; ++i)
     {
         if (i >= min)
         {
