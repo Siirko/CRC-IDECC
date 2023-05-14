@@ -23,9 +23,9 @@ uint16_t change_nth_bit(int n, uint16_t m);
 void print_word(int k, uint16_t m);
 
 void noisify(uint16_t *packet, int quantity);
-void noisifiy_packet(packet_t *packet, int quantity);
+void noisify_packet(packet_t *packet, int quantity);
 void denoisify(uint16_t *packet);
-void denoisifiy_packet(packet_t *packet);
+void denoisify_packet(packet_t *packet);
 
 int crc8_hamming_distance(void);
 void crc8_init_register(void);

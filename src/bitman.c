@@ -81,7 +81,7 @@ packet_t crc8_encode_packet(uint8_t const message[], int nBytes)
     return packet;
 }
 
-void noisifiy_packet(packet_t *packet, int quantity)
+void noisify_packet(packet_t *packet, int quantity)
 {
     int indexes[packet->size]; // to avoid creating multiple errors in the same
                                // byte
@@ -97,7 +97,7 @@ void noisifiy_packet(packet_t *packet, int quantity)
     }
 }
 
-void denoisifiy_packet(packet_t *packet)
+void denoisify_packet(packet_t *packet)
 {
     uint8_t crc_error = crc8_fast(packet->data, packet->size);
     uint8_t chk_crc = 0;

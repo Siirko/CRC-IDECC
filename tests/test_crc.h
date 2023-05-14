@@ -95,7 +95,7 @@ void test_crc_8_packet_error()
     packet_t packet = crc8_encode_packet(message, len);
     tps_assert(crc8_verify_packet(packet));
     packet_t packet_error = packet;
-    noisifiy_packet(&packet_error, 1);
+    noisify_packet(&packet_error, 1);
     for (int i = 0; i < len; i++)
     {
         printf("%d.\n", i);
@@ -105,7 +105,7 @@ void test_crc_8_packet_error()
     }
     tps_assert(!crc8_verify_packet(packet_error));
     packet_t corrected = packet_error;
-    denoisifiy_packet(&corrected);
+    denoisify_packet(&corrected);
     printf("packet: %s\n", packet.data);
     printf("packet_error: %s\n", packet_error.data);
     printf("packet_corrected: %s\n", corrected.data);
