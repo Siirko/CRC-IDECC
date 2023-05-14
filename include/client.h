@@ -23,13 +23,9 @@
 typedef struct client client_t;
 typedef struct client
 {
-    char *addr;
     int fd;
     pthread_t id;
-    client_t *arr;
-    int *arr_len;
-    int *serverfd;
-    pthread_mutex_t *server_mutex;
+    int serverfd;
 } client_t;
 
 void *handle_receiving(void *arg);

@@ -3,6 +3,7 @@
 #include "../include/utilities.h"
 void start_server(char *addr, char *port)
 {
+    srand(time(NULL));
     struct sockaddr_storage proxy_addr = {0};
     socklen_t proxy_addr_len = sizeof(proxy_addr);
     struct addrinfo *res = NULL;
@@ -45,6 +46,8 @@ void start_server(char *addr, char *port)
         {
             CHK(printf("Packet is corrupted\n"));
             denoisify(&packet);
+            // rand() % 100 < 90 => 90% de chance de corriger le paquet
+            // sinon redemande une retransmission
             if (crc8_verify(packet) == 0)
                 CHK(printf("Packet fixed\n"));
             else

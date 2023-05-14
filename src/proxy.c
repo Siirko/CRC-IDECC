@@ -3,6 +3,14 @@
 #include "../include/client.h"
 #include "../include/utilities.h"
 
+#define CHKPROBA(r, proba, packet)                                             \
+    do                                                                         \
+    {                                                                          \
+        if (r < proba)                                                         \
+            noisify(&packet, crc8_hamming_distance() -                         \
+                                 1); /*crc8_hamming not threadsafe*/           \
+    } while (0)
+
 volatile sig_atomic_t _sigint = 0;
 
 void interrupt(int sig)
@@ -26,15 +34,18 @@ void set_signal(int sig, void (*handler)(int))
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
     // Register Ctrl + C handler
-    sigaction(sig, &action, NULL);
+    CHK(sigaction(sig, &action, NULL));
 }
 
 void *handle_client(void *arg)
 {
     client_t *client = (client_t *)arg;
+    unsigned int seed = time(NULL) + client->id;
     uint16_t packet = 0;
+    float proba_noise = 0.3;
     for (;;)
     {
+        float r = rand_r(&seed) / (float)RAND_MAX;
         int nbytes;
         CHK(nbytes = recv(client->fd, &packet, sizeof(uint16_t), 0));
         if (nbytes == 0)
@@ -42,24 +53,16 @@ void *handle_client(void *arg)
             CHK(fprintf(stderr, "Client %ld disconnected\n", client->id));
             break;
         }
-        CHK(printf("Client %ld: %c\n", client->id, packet >> 8));
-        // Provoque une erreur sur le contenu récupéré
-        TCHK(pthread_mutex_lock(client->server_mutex));
-        noisify(&packet, crc8_hamming_distance() - 1);
-        TCHK(pthread_mutex_unlock(client->server_mutex));
-        CHK(printf("Client %ld corrupted: %c\n", client->id, packet >> 8));
-        // l'envoie au serveur
-        TCHK(pthread_mutex_lock(client->server_mutex));
-        CHK(send(*client->serverfd, &packet, sizeof(uint16_t), 0));
-        CHK(nbytes = recv(*client->serverfd, &packet, sizeof(uint16_t), 0));
+        CHK(printf("Client %ld packet: %c\n", client->id, packet >> 8));
+        CHKPROBA(r, proba_noise, packet);
+        CHK(send(client->serverfd, &packet, sizeof(uint16_t), 0));
+        CHK(nbytes = recv(client->serverfd, &packet, sizeof(uint16_t), 0));
         if (nbytes == 0)
         {
             CHK(fprintf(stderr, "Server disconnected\n"));
             exit(EXIT_SUCCESS);
         }
-        CHK(printf("Client %ld fixed: %c\n", client->id, packet >> 8));
-        TCHK(pthread_mutex_unlock(client->server_mutex));
-        // l'envoie au client
+        CHK(printf("Server packet from %ld: %c\n", client->id, packet >> 8));
         CHK(send(client->fd, &packet, sizeof(uint16_t), 0));
     }
     return NULL;
@@ -106,8 +109,7 @@ void start_proxy(char *addr, char *port, char *server_addr, char *server_port)
     set_signal(SIGINT, interrupt);
     int min = MIN_CLIENTS;
     client_t *clients = calloc(min, sizeof(client_t));
-    pthread_mutex_t server_mutex = PTHREAD_MUTEX_INITIALIZER;
-
+    CHK(printf("Waiting for connection...\n"));
     for (int i = 0; _sigint == 0; ++i)
     {
         if (i >= min)
@@ -116,21 +118,23 @@ void start_proxy(char *addr, char *port, char *server_addr, char *server_port)
             CHKNUL(clients = realloc(clients, min * sizeof(client_t)));
             CHK(printf("Max clients is now %d\n", min));
         }
-        int clientfd;
-        CHK(printf("Waiting for connection...\n"));
-        CHK(clientfd = accept(sockfd, (struct sockaddr *)&client_addr,
-                              &client_addr_len));
+
+        int clientfd =
+            accept(sockfd, (struct sockaddr *)&client_addr, &client_addr_len);
+        if (clientfd == -1)
+        {
+            if (errno == EINTR && _sigint == 1) // break if Ctrl + C
+                break;
+            else
+                raler(1, "accept");
+        }
         CHK(printf("Connection from %s:%d\n",
                    inet_ntoa(((struct sockaddr_in *)&client_addr)->sin_addr),
                    ntohs(((struct sockaddr_in *)&client_addr)->sin_port)));
         clients[i] = (client_t){
             .fd = clientfd,
-            .addr = inet_ntoa(((struct sockaddr_in *)&client_addr)->sin_addr),
             .id = i,
-            .arr = clients,
-            .arr_len = &min,
-            .serverfd = &serverfd,
-            .server_mutex = &server_mutex,
+            .serverfd = serverfd,
         };
         TCHK(pthread_create(&clients[i].id, NULL, handle_client, &clients[i]));
         TCHK(pthread_detach(clients[i].id));
