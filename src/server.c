@@ -52,7 +52,7 @@ void start_server(char *addr, char *port)
             CHK(printf("Packet is correct\n"));
         else
         {
-            CHK(printf("Packet is corrupted\n"));
+            CHK(printf("Packet is corrupted\nTrying to fix packet ...\n"));
             denoisify(&packet);
             // rand() % 100 < 90 => 90% de chance de corriger le paquet
             // crc8_verify(packet) == 0 && (rand() % 100 < 90)

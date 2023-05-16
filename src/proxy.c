@@ -3,14 +3,6 @@
 #include "../include/client.h"
 #include "../include/utilities.h"
 
-#define CHKPROBA(r, proba, packet)                                             \
-    do                                                                         \
-    {                                                                          \
-        if (r < proba)                                                         \
-            noisify(&packet, crc8_hamming_distance() -                         \
-                                 1); /*crc8_hamming not threadsafe*/           \
-    } while (0)
-
 volatile sig_atomic_t _sigint = 0;
 
 void interrupt(int sig)
@@ -42,6 +34,7 @@ void *handle_client(void *arg)
     client_t *client = (client_t *)arg;
     unsigned int seed = time(NULL) + client->id;
     uint16_t packet = 0;
+    // Probability of 30% to introduce noise in the packet
     float proba_noise = 0.3;
     for (;;)
     {
@@ -54,7 +47,8 @@ void *handle_client(void *arg)
             break;
         }
         CHK(printf("Client %ld packet: %c\n", client->id, packet >> 8));
-        CHKPROBA(r, proba_noise, packet);
+        if (r < proba_noise)
+            noisify(&packet, crc8_hamming_distance() - 1);
         CHK(send(client->serverfd, &packet, sizeof(uint16_t), 0));
         CHK(nbytes = recv(client->serverfd, &packet, sizeof(uint16_t), 0));
         if (nbytes == 0)
@@ -111,15 +105,15 @@ void start_proxy(char *addr, char *port, char *server_addr, char *server_port)
 {
     int serverfd = start_server_connection(server_addr, server_port);
     int sockfd = init_proxy(addr, port);
-    // TODO:handle CTRL-C to exit cleanly
     set_signal(SIGINT, interrupt);
-    int min = MIN_CLIENTS;
+    int min = MAX_CLIENTS;
     client_t *clients = calloc(min, sizeof(client_t));
     CHK(printf("Waiting for connection...\n"));
     for (int i = 0; _sigint == 0; ++i)
     {
         struct sockaddr_storage client_addr = {0};
         socklen_t client_addr_len = sizeof(client_addr);
+        // if we reach max clients, we double min and realloc
         if (i >= min)
         {
             min *= 2;

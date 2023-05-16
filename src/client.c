@@ -74,6 +74,8 @@ void start_client(char *addr_proxy, char *port_proxy)
         uint8_t const message[1] = {buf[0]};
         packet = crc8_encode(message[0], crc8_slow(message, 1));
         CHK(send(sockfd, &packet, sizeof(packet), 0));
+        // Barrière pour attendre que handler_receiving ait le temps de
+        // faire une copie du paquet envoyé
         TCHK(pthread_barrier_wait(&tempo));
         TCHK(pthread_barrier_wait(&tempo));
     }

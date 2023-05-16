@@ -17,22 +17,70 @@ typedef struct
     uint8_t crc;
 } packet_t;
 
+/**
+ * @brief Set the nth bit of m to 1
+ */
 uint16_t set_nth_bit(int n, uint16_t m);
+/**
+ * @brief Set the nth bit of m to 0
+ */
 uint16_t get_nth_bit(int n, uint16_t m);
+/**
+ * @brief Alter the nth bit of m
+ */
 uint16_t change_nth_bit(int n, uint16_t m);
+/**
+ * @brief Print the binary representation of m
+ */
 void print_word(int k, uint16_t m);
 
+/**
+ * @brief Put quantity errors in the packet (first 8bits)
+ */
 void noisify(uint16_t *packet, int quantity);
+/**
+ * @brief Put quantity errors in the packet
+ */
 void noisify_packet(packet_t *packet, int quantity);
+/**
+ * @brief try to correct the packet
+ */
 void denoisify(uint16_t *packet);
+/**
+ * @brief try to correct the packet
+ */
 void denoisify_packet(packet_t *packet);
 
+/**
+ * @brief Compute the hamming distance for the current polynome
+ */
 int crc8_hamming_distance(void);
+/**
+ * @brief Initiate crc8_register
+ */
 void crc8_init_register(void);
+/**
+ * @brief Compute the crc8 of a message using the register
+ */
 uint8_t crc8_fast(uint8_t const message[], int nBytes);
+/**
+ * @brief Compute the crc8 of a message doing division in F_2[X]
+ */
 uint8_t crc8_slow(uint8_t const message[], int nBytes);
+/**
+ * @brief Encode a messag and his crc8 in a packet
+ * @note message | crc8(message)
+ */
 uint16_t crc8_encode(uint8_t message, uint8_t crc);
 packet_t crc8_encode_packet(uint8_t const message[], int nBytes);
+/**
+ * @brief Verify the crc8 of a message
+ * @return 0 if the crc8 is correct, other if not
+ */
 int crc8_verify(uint16_t message);
+/**
+ * @brief Verify the crc8 of an array of bytes
+ * @return 0 if the crc8 is correct, other if not
+ */
 int crc8_verify_bytes(uint8_t const message[], int nBytes, uint8_t crc);
 int crc8_verify_packet(packet_t packet);

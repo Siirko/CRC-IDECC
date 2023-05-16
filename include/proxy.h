@@ -20,8 +20,23 @@
 #include <time.h>
 #include <unistd.h>
 
-#define MIN_CLIENTS 10
+#define MAX_CLIENTS 10
 
+/**
+ * @brief Function used in thread that handle client connection
+ * @param arg client_t
+ */
 void *handle_client(void *arg);
+/**
+ * @brief Start server connection
+ * @return int sockserver
+ */
 int start_server_connection(char *addr, char *port);
+/**
+ * @brief Entry point of the server
+ * @param addr address of the proxy
+ * @param port port of the proxy
+ * @param addr_proxy address of the server to connect
+ * @param port_proxy port of the server to connect
+ */
 void start_proxy(char *addr, char *port, char *server_addr, char *server_port);
