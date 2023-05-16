@@ -1,10 +1,9 @@
 #include "../include/server.h"
+#include "../include/bitman.h"
 #include "../include/utilities.h"
 
-void start_server(char *addr, char *port)
+int init_server(char *addr, char *port)
 {
-    struct sockaddr_storage proxy_addr = {0};
-    socklen_t proxy_addr_len = sizeof(proxy_addr);
     struct addrinfo *res = NULL;
     struct addrinfo hints = {0};
     hints.ai_family = AF_UNSPEC;
@@ -21,7 +20,17 @@ void start_server(char *addr, char *port)
     CHK(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
     CHK(bind(sockfd, res->ai_addr, res->ai_addrlen));
     CHK(listen(sockfd, 1));
+    freeaddrinfo(res);
+    return sockfd;
+}
+
+void start_server(char *addr, char *port)
+{
+    srand(time(NULL));
+    int sockfd = init_server(addr, port);
     // wait a connection
+    struct sockaddr_storage proxy_addr = {0};
+    socklen_t proxy_addr_len = sizeof(proxy_addr);
     int proxyfd;
     CHK(printf("Waiting proxy connection...\n"));
     CHK(proxyfd =
@@ -30,23 +39,36 @@ void start_server(char *addr, char *port)
     for (;;)
     {
         // receive a message
-        char buf[BUFSIZ] = {0};
+        uint16_t packet = 0;
         int nbytes = 0;
-        CHK(nbytes = recv(proxyfd, buf, BUFSIZ, 0));
+        CHK(nbytes = recv(proxyfd, &packet, sizeof(uint16_t), 0));
         if (nbytes == 0)
         {
             CHK(fprintf(stderr, "Proxy disconnected\n"));
             goto end;
         }
-        CHK(printf("Received: %s\n", buf));
-        // Fix the packet
-        /* ................ */
+        CHK(printf("Received: %c\n", packet >> 8));
+        if (crc8_verify(packet) == 0)
+            CHK(printf("Packet is correct\n"));
+        else
+        {
+            CHK(printf("Packet is corrupted\n"));
+            denoisify(&packet);
+            // rand() % 100 < 90 => 90% de chance de corriger le paquet
+            // crc8_verify(packet) == 0 && (rand() % 100 < 90)
+            if (crc8_verify(packet) == 0)
+                CHK(printf("Packet fixed\n"));
+            else
+            {
+                CHK(printf("Couldn't fix packet\n"));
+                packet = ERROR_CODE;
+            }
+        }
         // send the message back
-        CHK(send(proxyfd, buf, nbytes, 0));
+        CHK(send(proxyfd, &packet, sizeof(uint16_t), 0));
     }
 
 end:
     CHK(close(proxyfd));
     CHK(close(sockfd));
-    freeaddrinfo(res);
 }

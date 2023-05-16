@@ -1,31 +1,69 @@
 #include "../include/proxy.h"
+#include "../include/bitman.h"
 #include "../include/client.h"
 #include "../include/utilities.h"
+
+#define CHKPROBA(r, proba, packet)                                             \
+    do                                                                         \
+    {                                                                          \
+        if (r < proba)                                                         \
+            noisify(&packet, crc8_hamming_distance() -                         \
+                                 1); /*crc8_hamming not threadsafe*/           \
+    } while (0)
+
+volatile sig_atomic_t _sigint = 0;
+
+void interrupt(int sig)
+{
+    switch (sig)
+    {
+    // Ctrl + C
+    case SIGINT:
+        _sigint = 1;
+        break;
+    default:
+        break;
+    }
+}
+
+void set_signal(int sig, void (*handler)(int))
+{
+    struct sigaction action;
+    // Our handler
+    action.sa_handler = handler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+    // Register Ctrl + C handler
+    CHK(sigaction(sig, &action, NULL));
+}
 
 void *handle_client(void *arg)
 {
     client_t *client = (client_t *)arg;
-    char buf[BUFLEN] = {0};
+    unsigned int seed = time(NULL) + client->id;
+    uint16_t packet = 0;
+    float proba_noise = 0.3;
     for (;;)
     {
+        float r = rand_r(&seed) / (float)RAND_MAX;
         int nbytes;
-        CHK(nbytes = recv(client->fd, buf, BUFLEN, 0));
+        CHK(nbytes = recv(client->fd, &packet, sizeof(uint16_t), 0));
         if (nbytes == 0)
         {
             CHK(fprintf(stderr, "Client %ld disconnected\n", client->id));
             break;
         }
-        buf[nbytes] = '\0'; // peut être pas nécessaire
-        CHK(printf("Client %ld: %s\n", client->id, buf));
-        // Provoque une erreur sur le contenu récupéré
-        /* ............... */
-        // l'envoie au serveur
-        TCHK(pthread_mutex_lock(client->server_mutex));
-        CHK(send(*client->serverfd, buf, nbytes, 0));
-        CHK(nbytes = recv(*client->serverfd, buf, BUFLEN, 0));
-        TCHK(pthread_mutex_unlock(client->server_mutex));
-        // l'envoie au client
-        CHK(send(client->fd, buf, nbytes, 0));
+        CHK(printf("Client %ld packet: %c\n", client->id, packet >> 8));
+        CHKPROBA(r, proba_noise, packet);
+        CHK(send(client->serverfd, &packet, sizeof(uint16_t), 0));
+        CHK(nbytes = recv(client->serverfd, &packet, sizeof(uint16_t), 0));
+        if (nbytes == 0)
+        {
+            CHK(fprintf(stderr, "Server disconnected\n"));
+            exit(EXIT_SUCCESS);
+        }
+        CHK(printf("Server packet from %ld: %c\n", client->id, packet >> 8));
+        CHK(send(client->fd, &packet, sizeof(uint16_t), 0));
     }
     return NULL;
 }
@@ -42,14 +80,12 @@ int start_server_connection(char *addr, char *port)
     int sockfd;
     CHK(sockfd = socket(res->ai_family, hints.ai_socktype, 0));
     CHK(connect(sockfd, res->ai_addr, res->ai_addrlen));
+    freeaddrinfo(res);
     return sockfd;
 }
 
-void start_proxy(char *addr, char *port, char *server_addr, char *server_port)
+int init_proxy(char *addr, char *port)
 {
-    int serverfd = start_server_connection(server_addr, server_port);
-    struct sockaddr_storage client_addr;
-    socklen_t client_addr_len = sizeof(client_addr);
     struct addrinfo *res = NULL;
     struct addrinfo hints = {0};
     hints.ai_family = AF_UNSPEC;
@@ -67,40 +103,50 @@ void start_proxy(char *addr, char *port, char *server_addr, char *server_port)
     CHK(bind(sockfd, res->ai_addr, res->ai_addrlen));
 
     CHK(listen(sockfd, 10));
+    freeaddrinfo(res);
+    return sockfd;
+}
+
+void start_proxy(char *addr, char *port, char *server_addr, char *server_port)
+{
+    int serverfd = start_server_connection(server_addr, server_port);
+    int sockfd = init_proxy(addr, port);
     // TODO:handle CTRL-C to exit cleanly
+    set_signal(SIGINT, interrupt);
     int min = MIN_CLIENTS;
     client_t *clients = calloc(min, sizeof(client_t));
-    pthread_mutex_t server_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-    for (int i = 0;; ++i)
+    CHK(printf("Waiting for connection...\n"));
+    for (int i = 0; _sigint == 0; ++i)
     {
+        struct sockaddr_storage client_addr = {0};
+        socklen_t client_addr_len = sizeof(client_addr);
         if (i >= min)
         {
             min *= 2;
             CHKNUL(clients = realloc(clients, min * sizeof(client_t)));
             CHK(printf("Max clients is now %d\n", min));
         }
-        int clientfd;
-        CHK(printf("Waiting for connection...\n"));
-        CHK(clientfd = accept(sockfd, (struct sockaddr *)&client_addr,
-                              &client_addr_len));
+
+        int clientfd =
+            accept(sockfd, (struct sockaddr *)&client_addr, &client_addr_len);
+        if (clientfd == -1)
+        {
+            if (errno == EINTR && _sigint == 1) // break if Ctrl + C
+                break;
+            else
+                raler(1, "accept");
+        }
         CHK(printf("Connection from %s:%d\n",
                    inet_ntoa(((struct sockaddr_in *)&client_addr)->sin_addr),
                    ntohs(((struct sockaddr_in *)&client_addr)->sin_port)));
         clients[i] = (client_t){
             .fd = clientfd,
-            .addr = inet_ntoa(((struct sockaddr_in *)&client_addr)->sin_addr),
             .id = i,
-            .arr = clients,
-            .arr_len = &min,
-            .serverfd = &serverfd,
-            .server_mutex = &server_mutex,
+            .serverfd = serverfd,
         };
         TCHK(pthread_create(&clients[i].id, NULL, handle_client, &clients[i]));
         TCHK(pthread_detach(clients[i].id));
     }
-
-    freeaddrinfo(res);
     free(clients);
     CHK(close(serverfd));
     CHK(close(sockfd));

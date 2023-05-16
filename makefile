@@ -1,5 +1,5 @@
 CC ?= gcc
-CFLAGS ?= -Wextra -Wall -pedantic
+CFLAGS ?= -Wextra -Wall
 LDLIBS ?= -lm -pthread
 
 EXEC = project-rio
