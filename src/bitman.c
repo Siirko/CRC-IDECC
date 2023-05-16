@@ -101,8 +101,6 @@ void denoisify_packet(packet_t *packet)
 {
     if (crc8_verify_packet(*packet) != 0)
     {
-        // uint8_t crc_error = crc8_fast(packet->data, packet->size);
-        // uint8_t crc_xored = crc_error ^ packet->crc;
         uint8_t alternated_data[packet->size];
         for (int i = 0; i < packet->size; i++)
         {

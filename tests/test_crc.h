@@ -119,5 +119,6 @@ void unit_test_crc()
     TEST(test_crc_8_check);
     TEST(test_crc_8_correct);
     TEST(test_crc_8_encoding);
+    TEST(test_crc_8_correct);
     TEST(test_crc_8_packet_error);
 }

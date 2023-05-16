@@ -55,7 +55,7 @@ void start_server(char *addr, char *port)
             CHK(printf("Packet is corrupted\n"));
             denoisify(&packet);
             // rand() % 100 < 90 => 90% de chance de corriger le paquet
-            // sinon redemande une retransmission
+            // crc8_verify(packet) == 0 && (rand() % 100 < 90)
             if (crc8_verify(packet) == 0)
                 CHK(printf("Packet fixed\n"));
             else
