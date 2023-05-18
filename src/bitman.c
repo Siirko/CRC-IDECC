@@ -1,4 +1,5 @@
 #include "../include/bitman.h"
+#include "../include/utilities.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -159,9 +160,7 @@ void denoisify(uint16_t *packet)
         *packet = crc8_encode(mess, crc);
     }
     else
-    {
-        printf("no error\n");
-    }
+        CHK(printf("No error found in packet\n"));
 }
 
 int crc8_verify(uint16_t packet)
@@ -194,7 +193,7 @@ int crc8_hamming_distance(void)
     for (int i = 1; i < 256; i++)
     {
         uint16_t res = crc8_encode(i, crc8_register[i]);
-        int count = __builtin_popcount(res);
+        int count = __builtin_popcount(res); // count number of 1s in res
         if (count < min)
             min = count;
     }

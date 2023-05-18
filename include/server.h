@@ -20,4 +20,9 @@
 #include <time.h>
 #include <unistd.h>
 
+/**
+ * @brief Entry point of the server
+ * @param addr address of the server
+ * @param port port of the server
+ */
 void start_server(char *addr, char *port);

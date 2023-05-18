@@ -28,5 +28,14 @@ typedef struct client
     int serverfd;
 } client_t;
 
+/**
+ * @brief Function used in thread that handle receiving packets
+ * @param arg client_t
+ */
 void *handle_receiving(void *arg);
+/**
+ * @brief Entry point of the client
+ * @param addr_proxy address of the proxy
+ * @param port_proxy port of the proxy
+ */
 void start_client(char *addr_proxy, char *port_proxy);
