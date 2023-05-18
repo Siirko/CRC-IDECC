@@ -1,6 +1,6 @@
 # CRC-IDECC
 
-This project consist in a Introduction, Detection, and Error Correction on Content using CRC algorithm.
+This a project school that consist in a Introduction, Detection, and Error Correction on Content using CRC algorithm.
 
 ## Analysis of Capacity
 
