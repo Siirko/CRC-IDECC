@@ -49,7 +49,7 @@ void start_server(char *addr, char *port)
         }
         CHK(printf("Received: %c\n", packet >> 8));
         if (crc8_verify(packet) == 0)
-            CHK(printf("Packet is correct\n"));
+            CHK(printf("Packet is correct\n\n"));
         else
         {
             CHK(printf("Packet is corrupted\nTrying to fix packet ...\n"));
@@ -57,10 +57,10 @@ void start_server(char *addr, char *port)
             // rand() % 100 < 90 => 90% de chance de corriger le paquet
             // crc8_verify(packet) == 0 && (rand() % 100 < 90)
             if (crc8_verify(packet) == 0)
-                CHK(printf("Packet fixed\n"));
+                CHK(printf("Packet fixed\n\n"));
             else
             {
-                CHK(printf("Couldn't fix packet\n"));
+                CHK(printf("Couldn't fix packet\n\n"));
                 packet = ERROR_CODE;
             }
         }
