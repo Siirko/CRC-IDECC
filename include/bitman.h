@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define POLYNOME 0b10111001 //   x^8 + x^7 + x^5 + x^4 + x^3 + 0
+#define POLYNOME 0b10111001 //   x^7 + x^5 + x^4 + x^3 + x^1 + x^0
 #define LEN (8 * sizeof(uint8_t))
 #define TOPBIT (1 << (LEN - 1))
 #define CEIL(x, y) (((x) + (y)-1)) / (y)
