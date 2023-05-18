@@ -18,7 +18,7 @@ We can determine that the hamming distance of this polynomial is 4, which means 
 
 The established architecture is capable of handling multiple clients by connecting to a proxy, which is in turn connected to a server, using the TCP protocol with multi-threading support.
 
-![](https://i.imgur.com/zal9jgu.png)
+![Architecture](https://i.imgur.com/zal9jgu.png)
 
 To send a message, the client inserts a character and then calculates its CRC (Cyclic Redundancy Check), which is concatenated to form a 2-byte packet:
 
