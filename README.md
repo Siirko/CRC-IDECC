@@ -14,7 +14,7 @@ We can determine that the hamming distance of this polynomial is 4, which means 
 
 ## Overall Architecture
 
-![Architecture](https://i.imgur.com/zal9jgu.png)
+<img src="https://i.imgur.com/zal9jgu.png" class="img-responsive" alt="">
 
 The established architecture is capable of handling multiple clients by connecting to a proxy, which is in turn connected to a server, using the TCP protocol with multi-threading support.
 
