@@ -1,4 +1,5 @@
 #include "../include/bitman.h"
+#include "../include/utilities.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
