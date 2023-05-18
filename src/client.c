@@ -32,7 +32,8 @@ void *handle_receiving(void *arg)
         else if (ERROR_CODE == packet_received)
         {
         resend:
-            CHK(printf("Server couldn't fix packet, resending ...\n"));
+            CHK(printf("\rServer couldn't fix packet, resending ...\n"));
+            CHK(fflush(stdout));
             CHK(send(sockfd, &tmp, sizeof(tmp), 0));
             if (recv(sockfd, &packet_received, sizeof(packet_received), 0) == 0)
             {
