@@ -40,7 +40,7 @@ void start_server(char *addr, char *port)
     {
         // receive a message
         uint16_t packet = 0;
-        int nbytes = 0;
+        ssize_t nbytes = 0;
         CHK(nbytes = recv(proxyfd, &packet, sizeof(uint16_t), 0));
         if (nbytes == 0)
         {

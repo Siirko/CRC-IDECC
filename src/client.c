@@ -20,7 +20,7 @@ void *handle_receiving(void *arg)
         TCHK(pthread_barrier_wait(tempo));
         uint16_t tmp = *handler->packet;
         TCHK(pthread_barrier_wait(tempo));
-        int nbytes;
+        ssize_t nbytes;
         CHK(nbytes =
                 recv(sockfd, &packet_received, sizeof(packet_received), 0));
         if (nbytes == 0)

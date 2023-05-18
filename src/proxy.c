@@ -39,7 +39,7 @@ void *handle_client(void *arg)
     for (;;)
     {
         float r = rand_r(&seed) / (float)RAND_MAX;
-        int nbytes;
+        ssize_t nbytes;
         CHK(nbytes = recv(client->fd, &packet, sizeof(uint16_t), 0));
         if (nbytes == 0)
         {
