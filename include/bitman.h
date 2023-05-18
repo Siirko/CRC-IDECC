@@ -7,7 +7,7 @@
 #define TOPBIT (1 << (LEN - 1))
 #define CEIL(x, y) (((x) + (y)-1)) / (y)
 
-#define ERROR_CODE 0x44
+#define ERROR_CODE 0xFFFF
 extern uint8_t crc8_register[256];
 
 typedef struct
