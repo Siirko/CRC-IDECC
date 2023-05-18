@@ -27,7 +27,7 @@ To send a message, the client inserts a character and then calculates its CRC (C
 
 The client then sends the packet to the proxy, which modifies random bits in the first byte representing the message.
 
-***Note**: We assume that the byte representing the CRC cannot be altered.
+**Note**: We assume that the byte representing the CRC cannot be altered.
 
 The proxy then forwards the modified packet to the server, which verifies its validity by performing a polynomial division in the binary field $F_2[X]$
 
