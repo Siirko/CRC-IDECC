@@ -27,7 +27,7 @@ To send a message, the client inserts a character and then calculates its CRC (C
 
 The client then sends the packet to the proxy, which modifies random bits in the first byte representing the message.
 
-Note: We assume that the byte representing the CRC cannot be altered.
+***Note**: We assume that the byte representing the CRC cannot be altered.
 
 The proxy then forwards the modified packet to the server, which verifies its validity by performing a polynomial division in the binary field $F_2[X]$
 
@@ -63,9 +63,9 @@ you will need to execute in order:
 
 
 ## Resources
-
-- [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/html/split/index.html)
 - [Ross N. Williams. : A painless guide to crc error detection algorithms](https://www.ross.net/crc/download/crc_v3.txt)
+- [Sunshine2K : Understanding and implementing CRC (Cyclic Redundancy Check)
+calculation](http://www.sunshine2k.de/articles/coding/crc/understanding_crc.html)
 
 ## Authors
 - [Alexander Yanovskyy](https://yanovskyy.com/)
